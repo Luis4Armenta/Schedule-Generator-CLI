@@ -24,10 +24,6 @@ def download():
     pass
 
 
-@main.group()
-def upload():
-    pass
-
 @main.command()
 @click.option('--sessionid', '-s', required=True)
 @click.option('--token', '-t', required=True)
@@ -122,23 +118,6 @@ def download_schedule_availibility(carrera, plan):
     downloader.download_availability(carrera, plan)
     
     print("Los horarios han sido descargados")
-
-
-@upload.command(name='courses')
-@click.argument('carrera', required=False)
-@click.argument('plan', required=False)
-@click.argument('periodo', required=False)
-def upload_courses(carrera, plan, periodo):
-    """
-    Sube información de unidades de aprendizaje.
-    """
-    click.echo('Subiendo información para courses...')
-    if carrera:
-        click.echo(f'Carrera: {carrera}')
-    if plan:
-        click.echo(f'Plan de estudios: {plan}')
-    if periodo:
-        click.echo(f'Periodo: {periodo}')
 
 if __name__ == '__main__':
     main()
