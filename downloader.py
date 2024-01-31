@@ -16,7 +16,7 @@ class Downloader:
                         career_plan: str = None,
                         plan_period: str = None):
 
-      self.driver.get("https://www.saes.upiicsa.ipn.mx/")
+      self.driver.get(f'https://{self.domain}/')
 
       cookies = [
           {'name': '.ASPXFORMSAUTH', 'value': self.token, 'domain': self.domain},
