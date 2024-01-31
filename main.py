@@ -68,11 +68,13 @@ def download_subjects(carrera, plan, periodo):
     print("Las asignatruas han sido descargadas")
     
 
-@download.command(name='courses')
+@download.command(name='schedules')
 @click.argument('carrera', required=False)
 @click.argument('plan', required=False)
 @click.argument('periodo', required=False)
-def download_courses(carrera, plan, periodo):
+@click.argument('turno', required=False)
+@click.argument('secuencia', required=False)
+def download_schedules(carrera, plan, periodo, turno, secuencia):
     """
     Descarga las unidades de aprendizaje.
     """
@@ -82,7 +84,21 @@ def download_courses(carrera, plan, periodo):
     if plan:
         click.echo(f'plan {plan}{"..." if periodo == None else ","} ', nl=False if periodo != None else True)
     if periodo:
-        click.echo(f'periodo {periodo}...')
+        click.echo(f'periodo {periodo}{"..." if turno == None else ","} ', nl=False if turno != None else True)
+    if turno:
+        click.echo(f'turno {turno}{"..." if secuencia == None else ","} ', nl=False if secuencia != None else True)
+    if secuencia:
+        click.echo(f'secuencia {secuencia}...')
+
+    state = load_state()
+    assert state['session_id']
+    assert state['token']
+    assert state['domain']
+        
+    downloader = Downloader(state['session_id'], state['token'], state['domain'])
+    downloader.download_schedules(carrera, plan, periodo, turno, secuencia)
+    
+    print("Los horarios han sido descargados")
 
 @upload.command(name='courses')
 @click.argument('carrera', required=False)
