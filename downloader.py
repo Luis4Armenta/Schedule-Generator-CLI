@@ -166,6 +166,9 @@ class Downloader:
                 
               for secuencia in secuencias_disponibles:
                 time.sleep(4)
+                if secuencia == 'Todo':
+                  continue
+                
                 secuencia_select = Select(self.driver.find_element(By.ID, 'ctl00_mainCopy_lsSecuencias'))
                 secuencia_select.select_by_value(secuencia)
                 
