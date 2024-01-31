@@ -99,6 +99,30 @@ def download_schedules(carrera, plan, periodo, turno, secuencia):
     downloader.download_schedules(carrera, plan, periodo, turno, secuencia)
     
     print("Los horarios han sido descargados")
+    
+@download.command(name='availibility')
+@click.argument('carrera', required=False)
+@click.argument('plan', required=False)
+def download_schedule_availibility(carrera, plan):
+    """
+    Descarga la disponibilidad de unidades de aprendizaje que forman los horarios actual.
+    """
+    click.echo(f'Descargando unidades de aprendizaje{"..." if carrera == None else ""} ', nl=False if carrera != None else True)
+    if carrera:
+        click.echo(f'de la carrera {carrera}{"..." if plan == None else ","} ', nl=False if plan != None else True)
+    if plan:
+        click.echo(f'plan {plan}...')
+
+    state = load_state()
+    assert state['session_id']
+    assert state['token']
+    assert state['domain']
+        
+    downloader = Downloader(state['session_id'], state['token'], state['domain'])
+    downloader.download_availability(carrera, plan)
+    
+    print("Los horarios han sido descargados")
+
 
 @upload.command(name='courses')
 @click.argument('carrera', required=False)

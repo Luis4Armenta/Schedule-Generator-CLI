@@ -1,8 +1,10 @@
 import os
 import time
+from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import Select
+from selenium.webdriver.support.ui import Select, WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 class Downloader:
   def __init__(self, session_id, token, domain) -> None:
@@ -188,8 +190,79 @@ class Downloader:
       
       self.driver.close()
 
+  def download_availability(self, career: str = None, career_plan: str = None):
+      self.driver.get(f'https://{self.domain}/')
 
+      cookies = [
+          {'name': '.ASPXFORMSAUTH', 'value': self.token, 'domain': self.domain},
+          {'name': 'ASP.NET_SessionId', 'value': self.session_id, 'domain': self.domain},
+          {'name': 'AspxAutoDetectCookieSupport', 'value': '1', 'domain': self.domain},
+      ]
 
+      for cookie in cookies:
+        self.driver.add_cookie(cookie)
+        
+      self.driver.refresh()
+      time.sleep(2)
+
+      element_academica = self.driver.find_element(By.XPATH, '//a[@href="/Academica/default.aspx"]')
+      element_academica.click()
+      time.sleep(4)
+
+      ocupabilidad_link = self.driver.find_element(By.XPATH, '//a[@href="/Academica/Ocupabilidad_grupos.aspx"]')
+      ocupabilidad_link.click()
+      time.sleep(4)
+      
+      radio_button = WebDriverWait(self.driver, 10).until(
+          EC.presence_of_element_located((By.ID, 'ctl00_mainCopy_rblEsquema_0'))
+      )
+
+      radio_button.click()
+      
+      carreras_disponibles = [option.get_attribute("value") for option in Select(self.driver.find_element(By.ID, 'ctl00_mainCopy_dpdcarrera')).options]
+
+      if career:
+        assert career in carreras_disponibles
+        carreras_disponibles = [career]
+        
+      for carrera in carreras_disponibles:
+        time.sleep(4)
+        carrera_dropdown = Select(self.driver.find_element(By.ID, 'ctl00_mainCopy_dpdcarrera'))
+        carrera_dropdown.select_by_value(carrera)
+        
+        planes_disponibles = [option.get_attribute("value") for option in Select(self.driver.find_element(By.ID, 'ctl00_mainCopy_dpdplan')).options]
+
+        if career_plan:
+          assert career_plan in planes_disponibles
+          planes_disponibles = [career_plan]
+          
+        for plan in planes_disponibles:
+          time.sleep(4)
+          plan_dropdown = Select(self.driver.find_element(By.ID, "ctl00_mainCopy_dpdplan"))
+          plan_dropdown.select_by_value(plan)
+          
+          pagina_html = self.driver.page_source
+          
+          try:
+            path = f'downloads/availability/{carrera}/{plan}'
+            os.makedirs(path)
+          except FileExistsError:
+            pass  
+            
+          try:
+            with open(f'{path}/{datetime.now()}.html', 'w', encoding='utf-8') as archivo:
+              archivo.write(pagina_html)
+          except FileExistsError:
+            pass
+          
+      self.driver.close()
+        
+
+      
+
+      
+      
+ 
                 
             
           
