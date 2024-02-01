@@ -1,7 +1,6 @@
-# CLI DESCARGADOR DE CONTENIDO DE ACADEMIA DEL SAES
+# Schedule Generator CLI
 
-Este proyecto pretende brindar una forma sencilla y automatizada para descargar los mapas curriculares, los horarios de clases del periodo escolar corriente y la disponibilidad de los mismos.
-
+Esta es una herramienta para gestionar la data que necesita mi sistema generador de horarios.
 
 ## Instalación
 
