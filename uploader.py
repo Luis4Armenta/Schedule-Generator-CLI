@@ -1,5 +1,6 @@
 import os
 import requests
+from datetime import datetime
 
 class Uploader:
   
@@ -24,7 +25,31 @@ class Uploader:
         if file.endswith('.html'):
           file_path = os.path.join(root, file)
           self._upload_subject(file_path)
-  
+
+
+  def upload_availability(
+    self,
+    career: str = None,
+    plan: str = None
+  ):
+    start_scan_in = f'downloads/availability'
+    if career:
+      start_scan_in = start_scan_in + f'/{career}'
+    if plan:
+      start_scan_in = start_scan_in + f'/{plan}'
+      
+    for root, dirs, files in os.walk(start_scan_in):   
+      if len(files) != 0:
+        datetimes = [ datetime.strptime(file[:-5], '%Y-%m-%d %H:%M:%S.%f') for file in files]
+        
+        current_availibility = str(max(datetimes))
+        print(current_availibility)
+        
+        for file in files:
+          if file.startswith(current_availibility):
+            print(f'subiendo disponibilidad {career} {plan} {file[:-5]}')
+          
+          
   def upload_schedules(
       self,
       career: str = None,

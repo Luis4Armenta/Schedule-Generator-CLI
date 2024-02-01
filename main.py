@@ -140,9 +140,17 @@ def upload_schedules(carrera, plan, periodo, turno, secuencia):
 @click.argument('carrera', required=False)
 @click.argument('plan', required=False)
 @click.argument('periodo', required=False)
-def upload_schedules(carrera, plan, periodo):
+def upload_subjects(carrera, plan, periodo):
   uploader = Uploader()
   uploader.upload_subjects(carrera, plan, periodo)
+  
+  
+@upload.command(name='availability')
+@click.argument('carrera', required=False)
+@click.argument('plan', required=False)
+def upload_availability(carrera, plan):
+  uploader = Uploader()
+  uploader.upload_availability(carrera, plan)
 
 if __name__ == '__main__':
     main()
