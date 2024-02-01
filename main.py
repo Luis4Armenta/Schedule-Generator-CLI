@@ -1,6 +1,7 @@
 import click
 import json
 from downloader import Downloader
+from uploader import Uploader
 
 STATE_FILE = 'state.json'
 def load_state():
@@ -21,6 +22,10 @@ def main():
 
 @main.group()
 def download():
+    pass
+
+@main.group()
+def upload():
     pass
 
 
@@ -118,6 +123,17 @@ def download_schedule_availibility(carrera, plan):
     downloader.download_availability(carrera, plan)
     
     print("Los horarios han sido descargados")
+
+
+@upload.command(name='schedules')
+@click.argument('carrera', required=False)
+@click.argument('plan', required=False)
+@click.argument('periodo', required=False)
+@click.argument('turno', required=False)
+@click.argument('secuencia', required=False)
+def upload_schedules(carrera, plan, periodo, turno, secuencia):
+  uploader = Uploader()
+  uploader.upload_schedules(carrera, plan, periodo, turno, secuencia)
 
 if __name__ == '__main__':
     main()
