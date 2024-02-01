@@ -1,6 +1,12 @@
 import os
 import requests
+from lxml import etree
+from typing import List
+from bs4 import BeautifulSoup
 from datetime import datetime
+from subjects.domain.model.subject import Subject
+from subjects.application.subject_service import SubjectService
+from subjects.infrastructure.mongo_subjects_repository import MongoSubjectsRepository
 
 class Uploader:
   
@@ -81,15 +87,49 @@ class Uploader:
           self._upload_schedule(file_path)
     
   def _upload_schedule(self, file_path: str):
-    with open(file_path, 'rb') as file:
-      files = {'file': (os.path.basename(file_path), file)}
-      respuesta = requests.post('http://localhost:3000/courses', files=files)
+    with open(file_path, 'r') as file:
+      contenido: str = file.read()
       
-      if respuesta.status_code == 202:
-        print(f'Se ha cargado el horario {file_path[-10:][:-5]} correctamente.')
-      else:
-        print(f'Ha ocurrido un error... {respuesta.content}')
+      subjects: List[Subject] = []
+    
+      dom = etree.HTML(str(BeautifulSoup(contenido, 'html.parser', from_encoding='utf8')))
+      props = dom.xpath('//select/option[@selected="selected"]/@value')
+      raw_subjects = dom.xpath('//table[@id="ctl00_mainCopy_GridView1"]//tr')[1:]
+      
+      career: str = props[0]
+      plan: str = props[1]
+      
+      for raw_subject in raw_subjects:
+        fields = raw_subject.xpath('./td/text()')
+        
+        level: int = int(fields[0])
+        key: str = fields[1]
+        name: str = fields[2]
+        required: bool = True if fields[3].strip().upper() == 'OBLIGATORIA' else False
+        credits_required: float = float(fields[4])
+        
+        subject = Subject(
+          career=career,
+          plan=plan,
+          level=level,
+          key=key,
+          name=name,
+          required=required,
+          credits_required=credits_required
+        )
+        
+        subjects.append(subject)
+      
+      
+      subjects_database = MongoSubjectsRepository()
+      subjects_database.connect()
+      subject_service = SubjectService(subjects_database)
+      subject_service.upload_subjects(subjects)
+      subjects_database.disconnect()
 
+      print(f'Se ha cargado el horario {file_path[-10:][:-5]}.')
+      
+      
   def _upload_subject(self, file_path: str):
     with open(file_path, 'rb') as file:
       files = {'file': (os.path.basename(file_path), file)}
