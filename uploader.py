@@ -47,7 +47,8 @@ class Uploader:
         
         for file in files:
           if file.startswith(current_availibility):
-            print(f'subiendo disponibilidad {career} {plan} {file[:-5]}')
+            file_path = os.path.join(root, file)
+            self._upload_availability(file_path)
           
           
   def upload_schedules(
@@ -97,5 +98,16 @@ class Uploader:
       if respuesta.status_code == 202:
         c, p, s = file_path.split('/')[-3:]
         print(f'Se ha cargado el periodo {s[:-5]} del plan {p} de la carrera {c}.')
+      else:
+        print(f'Ha ocurrido un error... {respuesta.content}')
+
+  def _upload_availability(self, file_path: str):
+    with open(file_path, 'rb') as file:
+      files = {'file': (os.path.basename(file_path), file)}
+      respuesta = requests.post('http://localhost:3000/courses/occupancy', files=files)
+      
+      if respuesta.status_code == 200:
+        c, p = file_path.split('/')[-2:]
+        print(f'Se ha actualizado la disponibilidad de la carrera {c}, plan {p[:-5]}.')
       else:
         print(f'Ha ocurrido un error... {respuesta.content}')
