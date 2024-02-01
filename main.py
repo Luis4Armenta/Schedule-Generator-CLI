@@ -135,5 +135,14 @@ def upload_schedules(carrera, plan, periodo, turno, secuencia):
   uploader = Uploader()
   uploader.upload_schedules(carrera, plan, periodo, turno, secuencia)
 
+  
+@upload.command(name='subjects')
+@click.argument('carrera', required=False)
+@click.argument('plan', required=False)
+@click.argument('periodo', required=False)
+def upload_schedules(carrera, plan, periodo):
+  uploader = Uploader()
+  uploader.upload_subjects(carrera, plan, periodo)
+
 if __name__ == '__main__':
     main()
