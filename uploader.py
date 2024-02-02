@@ -96,6 +96,10 @@ class Uploader:
           self._upload_schedule(file_path)
     
   def _upload_subject(self, file_path: str):
+    subjects_database = MongoSubjectsRepository()
+    subjects_database.connect()
+    subject_service = SubjectService(subjects_database)
+    
     with open(file_path, 'r') as file:
       contenido: str = file.read()
       
@@ -130,17 +134,29 @@ class Uploader:
         subjects.append(subject)
       
       
-      subjects_database = MongoSubjectsRepository()
-      subjects_database.connect()
-      subject_service = SubjectService(subjects_database)
+      
       subject_service.upload_subjects(subjects)
-      subjects_database.disconnect()
 
       c, p, n = file_path.split('/')[-3:]
       print(f'Se han cargado las asignaturas de la carrera {c}, plan {p}, nivel {n[:-5]}.')
       
+    subjects_database.disconnect()
       
   def _upload_schedule(self, file_path: str):
+    course_repository = MongoCourseRepository()
+    subjects_repository = MongoSubjectsRepository()
+    teachers_repository = MongoTeachersRepository()
+    
+    course_repository.connect()
+    subjects_repository.connect()
+    teachers_repository.connect()
+    
+    web_scraper = BS4CommentsWebScraper()
+    text_analyzer = AzureTextAnalyzer()
+    comment_service = CommentService(web_scraper, text_analyzer)
+    
+    teacher_service = TeacherService(teachers_repository, comment_service)
+    courses_service = CourseService(course_repository, teacher_service, subjects_repository)
     with open(file_path, 'rb') as file:
       content = file.read()
       courses: List[Course] = []
@@ -184,31 +200,31 @@ class Uploader:
 
         courses.append(course)
 
-      course_repository = MongoCourseRepository()
-      subjects_repository = MongoSubjectsRepository()
-      teachers_repository = MongoTeachersRepository()
-      
-      course_repository.connect()
-      subjects_repository.connect()
-      teachers_repository.connect()
-      
-      web_scraper = BS4CommentsWebScraper()
-      text_analyzer = AzureTextAnalyzer()
-      comment_service = CommentService(web_scraper, text_analyzer)
-      
-      teacher_service = TeacherService(teachers_repository, comment_service)
-      courses_service = CourseService(course_repository, teacher_service, subjects_repository)
       courses_service.upload_courses(courses)
-      
-      course_repository.disconnect()
-      subjects_repository.disconnect()
-      teachers_repository.disconnect()
       
       s = file_path.split('/')
       print(f'Se ha cargado los cursos de la secuencia {s[-1][:-5]}')
 
+    course_repository.disconnect()
+    subjects_repository.disconnect()
+    teachers_repository.disconnect()
 
   def _upload_availability(self, file_path: str):
+    course_repository = MongoCourseRepository()
+    subjects_repository = MongoSubjectsRepository()
+    teachers_repository = MongoTeachersRepository()
+    
+    course_repository.connect()
+    subjects_repository.connect()
+    teachers_repository.connect()
+    
+    web_scraper = BS4CommentsWebScraper()
+    text_analyzer = AzureTextAnalyzer()
+    comment_service = CommentService(web_scraper, text_analyzer)
+    
+    teacher_service = TeacherService(teachers_repository, comment_service)
+    courses_service = CourseService(course_repository, teacher_service, subjects_repository)
+      
     with open(file_path, 'rb') as file:
       content = file.read()
       availabilities: List[CourseAvailability] = []
@@ -229,29 +245,17 @@ class Uploader:
         )
         availabilities.append(a)
         
-      course_repository = MongoCourseRepository()
-      subjects_repository = MongoSubjectsRepository()
-      teachers_repository = MongoTeachersRepository()
       
-      course_repository.connect()
-      subjects_repository.connect()
-      teachers_repository.connect()
-      
-      web_scraper = BS4CommentsWebScraper()
-      text_analyzer = AzureTextAnalyzer()
-      comment_service = CommentService(web_scraper, text_analyzer)
-      
-      teacher_service = TeacherService(teachers_repository, comment_service)
-      courses_service = CourseService(course_repository, teacher_service, subjects_repository)
       
       courses_service.update_course_availability(availabilities)
       
-      course_repository.disconnect()
-      subjects_repository.disconnect()
-      teachers_repository.disconnect()
 
       c, p = file_path.split('/')[-2:]
       print(f'Se ha actualizado la disponibilidad de la carrera {c}, plan {p[:-5]}.')
+    
+    course_repository.disconnect()
+    subjects_repository.disconnect()
+    teachers_repository.disconnect()
 
 def get_sessions(raw_course) -> ScheduleCourse:
   sessions: ScheduleCourse = []
