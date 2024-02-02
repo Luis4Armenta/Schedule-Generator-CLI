@@ -25,9 +25,7 @@ class MongoConfig(TypedDict):
 class MongoSubjectsRepository(SubjectRepository):
  
   def connect(self) -> None:
-    str_connection = f'mongodb://{os.environ["MONGODB_USER"]}:{os.environ["MONGODB_PASSWORD"]}@{os.environ["MONGODB_HOST"]}/'
-
-    self.mongo_client = MongoClient(host=str_connection, port=int(os.environ['MONGODB_PORT']))
+    self.mongo_client = MongoClient(os.environ['MONGODB_CONNECTION_STRING'])
     self.database = self.mongo_client[os.environ['MONGODB_DATABASE']]
     self.subjects_collection = self.database['subjects']
   

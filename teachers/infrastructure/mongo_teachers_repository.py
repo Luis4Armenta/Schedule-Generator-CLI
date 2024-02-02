@@ -21,9 +21,7 @@ def singleton(cls):
 @singleton
 class MongoTeachersRepository(TeacherRepository):
   def connect(self) -> None:
-    str_connection = f'mongodb://{os.environ["MONGODB_USER"]}:{os.environ["MONGODB_PASSWORD"]}@{os.environ["MONGODB_HOST"]}/'
-
-    self.mongo_client = MongoClient(host=str_connection, port=int(os.environ['MONGODB_PORT']))
+    self.mongo_client = MongoClient(os.environ['MONGODB_CONNECTION_STRING'])
     self.database = self.mongo_client[os.environ['MONGODB_DATABASE']]
     self.teachers_collection = self.database['teachers']
     
@@ -42,10 +40,6 @@ class MongoTeachersRepository(TeacherRepository):
       return None
   
   def add_teacher(self, teacher: Teacher) -> None:
-    print('Trantando..........')
-    print(f'Agregando profesor {teacher.name}')
-    print(f'Sus comentarios {teacher.comments}')
-    print(f'Su url {teacher.url}')
     self.teachers_collection.insert_one(teacher.dict())
 
   def disconnect(self) -> None:
