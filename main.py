@@ -2,6 +2,7 @@ import click
 import json
 from downloader import Downloader
 from uploader import Uploader
+from dotenv import load_dotenv
 
 STATE_FILE = 'state.json'
 def load_state():
@@ -17,7 +18,7 @@ def save_state(state):
 
 @click.group()
 def main():
-    pass
+  load_dotenv()
 
 
 @main.group()

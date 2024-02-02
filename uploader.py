@@ -5,9 +5,17 @@ from typing import List
 from bs4 import BeautifulSoup
 from datetime import datetime
 from subjects.domain.model.subject import Subject
+from courses.application.course_service import CourseService
+from courses.domain.model.course import Course, ScheduleCourse
+from teachers.application.teacher_service import TeacherService
+from comments.application.comment_service import CommentService
 from subjects.application.subject_service import SubjectService
+from comments.infrastructure.azure_text_analyzer import AzureTextAnalyzer
+from teachers.infrastructure.mongo_teachers_repository import MongoTeachersRepository
+from courses.infrastructure.mongo_courses_repository import MongoCourseRepository
+from comments.infrastructure.bs4_comments_web_scraper import BS4CommentsWebScraper
 from subjects.infrastructure.mongo_subjects_repository import MongoSubjectsRepository
-
+from courses.infrastructure.mongo_courses_repository import MongoCourseRepository
 class Uploader:
   
   def upload_subjects(
@@ -86,20 +94,20 @@ class Uploader:
           file_path = os.path.join(root, file)
           self._upload_schedule(file_path)
     
-  def _upload_schedule(self, file_path: str):
+  def _upload_subject(self, file_path: str):
     with open(file_path, 'r') as file:
       contenido: str = file.read()
       
       subjects: List[Subject] = []
     
-      dom = etree.HTML(str(BeautifulSoup(contenido, 'html.parser', from_encoding='utf8')))
+      dom = etree.HTML(str(BeautifulSoup(contenido,'html.parser')))
       props = dom.xpath('//select/option[@selected="selected"]/@value')
       raw_subjects = dom.xpath('//table[@id="ctl00_mainCopy_GridView1"]//tr')[1:]
       
       career: str = props[0]
       plan: str = props[1]
       
-      for raw_subject in raw_subjects:
+      for raw_subject in raw_subjects:        
         fields = raw_subject.xpath('./td/text()')
         
         level: int = int(fields[0])
@@ -127,19 +135,77 @@ class Uploader:
       subject_service.upload_subjects(subjects)
       subjects_database.disconnect()
 
-      print(f'Se ha cargado el horario {file_path[-10:][:-5]}.')
+      c, p, n = file_path.split('/')[-3:]
+      print(f'Se han cargado las asignaturas de la carrera {c}, plan {p}, nivel {n[:-5]}.')
       
       
-  def _upload_subject(self, file_path: str):
+  def _upload_schedule(self, file_path: str):
     with open(file_path, 'rb') as file:
-      files = {'file': (os.path.basename(file_path), file)}
-      respuesta = requests.post('http://localhost:3000/subjects', files=files)
+      content = file.read()
+      courses: List[Course] = []
+
+      dom = etree.HTML(str(BeautifulSoup(content, 'html.parser')))
+      raw_courses = dom.xpath('//table[@id="ctl00_mainCopy_dbgHorarios"]//tr')[1:]
+      props = dom.xpath('//select/option[@selected="selected"]/@value')
       
-      if respuesta.status_code == 202:
-        c, p, s = file_path.split('/')[-3:]
-        print(f'Se ha cargado el periodo {s[:-5]} del plan {p} de la carrera {c}.')
-      else:
-        print(f'Ha ocurrido un error... {respuesta.content}')
+      career: str = props[0]
+      plan: str = props[2]
+      level: str = props[3]
+      seq: str = props[4].strip()
+
+
+      for raw_course in raw_courses:
+        sequence = raw_course.xpath('./td/text()')[0].strip().upper()
+        level = sequence[0]
+        shift = sequence[2]
+        semester = sequence[3]
+        teacher_name = raw_course.xpath('./td/text()')[2].strip().upper()
+
+        if sequence != seq:
+          continue
+
+        schedule_course: ScheduleCourse = get_sessions(raw_course)
+        
+        course = Course(
+          semester=semester,
+          career=career,
+          level=level,
+          plan=plan,
+          shift=shift,
+          sequence=sequence,
+          subject=raw_course.xpath('./td/text()')[1],
+          teacher=teacher_name,
+          schedule=schedule_course,
+          course_availability=40,
+          required_credits=None,
+          teacher_positive_score=None,
+        )
+
+        courses.append(course)
+
+      course_repository = MongoCourseRepository()
+      subjects_repository = MongoSubjectsRepository()
+      teachers_repository = MongoTeachersRepository()
+      
+      course_repository.connect()
+      subjects_repository.connect()
+      teachers_repository.connect()
+      
+      web_scraper = BS4CommentsWebScraper()
+      text_analyzer = AzureTextAnalyzer()
+      comment_service = CommentService(web_scraper, text_analyzer)
+      
+      teacher_service = TeacherService(teachers_repository, comment_service)
+      courses_service = CourseService(course_repository, teacher_service, subjects_repository)
+      courses_service.upload_courses(courses)
+      
+      course_repository.disconnect()
+      subjects_repository.disconnect()
+      teachers_repository.disconnect()
+      
+      s = file_path.split('/')
+      print(f'Se ha cargado los cursos de la secuencia {s[-1][:-5]}')
+
 
   def _upload_availability(self, file_path: str):
     with open(file_path, 'rb') as file:
@@ -151,3 +217,19 @@ class Uploader:
         print(f'Se ha actualizado la disponibilidad de la carrera {c}, plan {p[:-5]}.')
       else:
         print(f'Ha ocurrido un error... {respuesta.content}')
+        
+def get_sessions(raw_course) -> ScheduleCourse:
+  sessions: ScheduleCourse = []
+  
+  days = raw_course.xpath('./td/text()')[5:-1]
+  for session, day in zip(days, ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']):
+    session: str = session.strip()
+    if session:
+      start_time, end_time = session.split('-')
+      sessions.append({
+        'day': day,
+        'start_time': start_time,
+        'end_time': end_time,
+      })
+      
+  return sessions

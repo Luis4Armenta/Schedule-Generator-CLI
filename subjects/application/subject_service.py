@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from abc import ABC, abstractmethod
 from subjects.domain.model.subject import Subject
 from subjects.domain.ports.subjects_repository import SubjectRepository
@@ -6,6 +6,10 @@ from subjects.domain.ports.subjects_repository import SubjectRepository
 class ISubjectService(ABC):
   @abstractmethod
   def upload_subjects(self, subjects: List[Subject]):
+    pass
+  
+  @abstractmethod
+  def get_subject(self, career: str, name: str) -> Optional[Subject]:
     pass
 
 class SubjectService(ISubjectService):
@@ -20,5 +24,8 @@ class SubjectService(ISubjectService):
         continue
       else:
         self.subject_repository.add_subject(subject.dict())
+        
+  def get_subject(self, career: str, name: str) -> Optional[Subject]:
+    return self.subject_repository.get_subject(career, name)
 
 
