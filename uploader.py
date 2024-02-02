@@ -5,6 +5,7 @@ from typing import List
 from bs4 import BeautifulSoup
 from datetime import datetime
 from subjects.domain.model.subject import Subject
+from courses.domain.model.course import CourseAvailability
 from courses.application.course_service import CourseService
 from courses.domain.model.course import Course, ScheduleCourse
 from teachers.application.teacher_service import TeacherService
@@ -209,15 +210,49 @@ class Uploader:
 
   def _upload_availability(self, file_path: str):
     with open(file_path, 'rb') as file:
-      files = {'file': (os.path.basename(file_path), file)}
-      respuesta = requests.post('http://localhost:3000/courses/occupancy', files=files)
+      content = file.read()
+      availabilities: List[CourseAvailability] = []
+    
+      dom = etree.HTML(str(BeautifulSoup(content, 'html.parser')))
+      raw_courses = dom.xpath('//table[@id="ctl00_mainCopy_GrvOcupabilidad"]//tr')[1:]
       
-      if respuesta.status_code == 200:
-        c, p = file_path.split('/')[-2:]
-        print(f'Se ha actualizado la disponibilidad de la carrera {c}, plan {p[:-5]}.')
-      else:
-        print(f'Ha ocurrido un error... {respuesta.content}')
+      for raw_course in raw_courses:
+        sequence: str = raw_course.xpath('./td/text()')[0].strip().upper()
+        subject: str = raw_course.xpath('./td/text()')[2].strip().upper()
+        course_avalibility = int(raw_course.xpath('./td/text()')[6].strip())
+      
+      
+        a = CourseAvailability(
+          sequence=sequence,
+          subject=subject,
+          course_availability=course_avalibility
+        )
+        availabilities.append(a)
         
+      course_repository = MongoCourseRepository()
+      subjects_repository = MongoSubjectsRepository()
+      teachers_repository = MongoTeachersRepository()
+      
+      course_repository.connect()
+      subjects_repository.connect()
+      teachers_repository.connect()
+      
+      web_scraper = BS4CommentsWebScraper()
+      text_analyzer = AzureTextAnalyzer()
+      comment_service = CommentService(web_scraper, text_analyzer)
+      
+      teacher_service = TeacherService(teachers_repository, comment_service)
+      courses_service = CourseService(course_repository, teacher_service, subjects_repository)
+      
+      courses_service.update_course_availability(availabilities)
+      
+      course_repository.disconnect()
+      subjects_repository.disconnect()
+      teachers_repository.disconnect()
+
+      c, p = file_path.split('/')[-2:]
+      print(f'Se ha actualizado la disponibilidad de la carrera {c}, plan {p[:-5]}.')
+
 def get_sessions(raw_course) -> ScheduleCourse:
   sessions: ScheduleCourse = []
   

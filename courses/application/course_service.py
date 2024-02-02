@@ -1,6 +1,7 @@
 from typing import List
 
 from courses.domain.model.course import Course
+from courses.domain.model.course import CourseAvailability
 from courses.domain.ports.courses_repository import CourseRepository
 
 from subjects.application.subject_service import SubjectService
@@ -35,3 +36,11 @@ class CourseService:
       course.teacher_positive_score = positive_score
       course.required_credits = subject.credits_required
       self.course_repository.add_course(course)
+  
+  def update_course_availability(self, availabilities: List[CourseAvailability]):
+    for avalability in availabilities:
+      self.course_repository.update_availability(
+        sequence=avalability.sequence,
+        subject=avalability.subject,
+        new_availability=avalability.course_availability
+      )

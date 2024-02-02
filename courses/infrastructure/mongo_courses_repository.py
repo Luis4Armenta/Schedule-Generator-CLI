@@ -1,6 +1,6 @@
 import os
-from pymongo import MongoClient
 from typing import Optional
+from pymongo import MongoClient
 
 from courses.domain.model.course import Course
 from courses.domain.ports.courses_repository import CourseRepository
@@ -53,6 +53,12 @@ class MongoCourseRepository(CourseRepository):
   def add_course(self, course: Course) -> None:
     print(f'Agregando {course.sequence}, {course.subject}')
     self.course_collection.insert_one(course.dict())
+    
+  def update_availability(self, sequence: str, subject: str, new_availability: int) -> None:
+    self.course_collection.update_one(
+            {"sequence": sequence, "subject": subject},
+            {"$set": {"course_availability": new_availability}}
+        )
     
   def disconnect(self) -> None:
      self.mongo_client.close()

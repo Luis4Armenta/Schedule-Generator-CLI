@@ -17,6 +17,14 @@ class CourseRepository(ABC):
     pass
   
   @abstractmethod
+  def add_course(self, course: Course) -> None:
+    pass
+  
+  @abstractmethod
+  def update_availability(self, sequence: str, subject: str, new_availability: int) -> None:
+    pass
+  
+  @abstractmethod
   def disconnect(self) -> None:
     pass
 

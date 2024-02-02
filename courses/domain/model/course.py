@@ -9,6 +9,12 @@ class Session(TypedDict):
 
 ScheduleCourse = List[Session]
 
+class CourseAvailability(BaseModel):
+  sequence: str
+  subject: str
+  course_availability: int
+
+
 class Course(BaseModel):
   plan: str 
   level: str

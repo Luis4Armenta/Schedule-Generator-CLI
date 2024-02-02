@@ -102,7 +102,7 @@ def download_schedules(carrera, plan, periodo, turno, secuencia):
     
     print("Los horarios han sido descargados")
     
-@download.command(name='availibility')
+@download.command(name='availability')
 @click.argument('carrera', required=False)
 @click.argument('plan', required=False)
 def download_schedule_availibility(carrera, plan):
